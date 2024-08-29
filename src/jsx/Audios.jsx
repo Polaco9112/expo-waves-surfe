@@ -55,9 +55,9 @@ const AudioListItem = ({ memo }) => {
   useEffect(() => {
     return sound
       ? () => {
-          console.log('Unloading Sound');
-          sound.unloadAsync();
-        }
+        console.log('Unloading Sound');
+        sound.unloadAsync();
+      }
       : undefined;
   }, [sound]);
 
@@ -85,15 +85,18 @@ const AudioListItem = ({ memo }) => {
   let numLines = 50;
   let lines = [];
 
-  for (let i = 0; i < numLines; i++) {
-    const meteringIndex = Math.floor((i * memo.metering.length) / numLines);
-    const nextMeteringIndex = Math.ceil(
-      ((i + 1) * memo.metering.length) / numLines
-    );
-    const values = memo.metering.slice(meteringIndex, nextMeteringIndex);
-    const average = values.reduce((sum, a) => sum + a, 0) / values.length;
-    // lines.push(memo.metering[meteringIndex]);
-    lines.push(average);
+  if (numLines > 0 && memo.metering.length > 0) {
+    for (let i = 0; i < numLines; i++) {
+      const meteringIndex = Math.floor((i * memo.metering.length) / numLines);
+      const nextMeteringIndex = Math.ceil(
+        ((i + 1) * memo.metering.length) / numLines
+      );
+      const values = memo.metering.slice(meteringIndex, nextMeteringIndex);
+      if (values.length > 0) {
+        const average = values.reduce((sum, a) => sum + a, 0) / values.length;
+        lines.push(average);
+      }
+    }
   }
 
   return (
