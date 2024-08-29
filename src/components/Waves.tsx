@@ -19,7 +19,7 @@ import Animated, {
 import AudioListItem, {Memo} from './Audios'
 
 
-export default function MemosScreen() {
+export default function Waves() {
   const [recording, setRecording] = useState<Recording>();
   const [memos, setMemos] = useState<Memo[]>([]);
 
