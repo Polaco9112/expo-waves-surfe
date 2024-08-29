@@ -74,14 +74,6 @@ const AudioListItem = ({ memo }) => {
 
   const progress = position / duration;
 
-  const animatedIndicatorStyle = useAnimatedStyle(() => ({
-    left: `${progress * 100}%`,
-    // withTiming(`${progress * 100}%`, {
-    //   duration:
-    //     (status && status.progressUpdateIntervalMillis) || 100,
-    // }),
-  }));
-
   let numLines = 50;
   let lines = [];
 
