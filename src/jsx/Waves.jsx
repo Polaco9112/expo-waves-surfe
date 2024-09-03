@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Text,
   View,
-  StyleSheet,
-  Button,
   FlatList,
   Pressable,
 } from 'react-native';
