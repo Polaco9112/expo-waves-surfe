@@ -22,6 +22,27 @@ const AudioListItem = ({ memo }) => {
     setSound(sound);
   }
 
+
+
+  useEffect(() => {
+    loadSound();
+  }, [memo]);
+
+  async function playSound() {
+    if (!sound) {
+      return
+    }
+
+    if (status?.isLoaded && status?.isPlaying) {
+      await sound.pauseAsync()
+    } else if (status?.isLoaded && status.didJustFinish) {
+      await sound.setPositionAsync(0)
+      await sound.playAsync()
+    } else if (status?.isLoaded) {
+      await sound.playFromPositionAsync(status.positionMillis)
+    }
+  }
+
   const onPlaybackStatusUpdate = useCallback(
     async (newStatus) => {
       setStatus(newStatus);
@@ -36,21 +57,6 @@ const AudioListItem = ({ memo }) => {
     },
     [sound]
   );
-
-  useEffect(() => {
-    loadSound();
-  }, [memo]);
-
-  async function playSound() {
-    if (!sound) {
-      return;
-    }
-    if (status.isLoaded && status.isPlaying) {
-      await sound.pauseAsync();
-    } else {
-      await sound.replayAsync();
-    }
-  }
 
   useEffect(() => {
     return sound
