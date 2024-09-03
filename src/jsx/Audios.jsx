@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { AVPlaybackStatus, Audio } from 'expo-av';
 import Animated, {
@@ -112,6 +112,7 @@ const AudioListItem = ({ memo }) => {
         <View style={styles.wave}>
           {lines.map((db, index) => (
             <View
+              key={index}
               style={[
                 styles.waveLine,
                 {
