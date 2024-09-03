@@ -117,7 +117,7 @@ const AudioListItem = ({ memo }) => {
                 {
                   height: interpolate(db, [-60, 0], [5, 50], Extrapolate.CLAMP),
                   backgroundColor:
-                    progress > index / lines.length ? 'red' : 'gainsboro',
+                    progress > index / lines.length ? '#ad1b07' : '#707676',
                 },
               ]}
             />
