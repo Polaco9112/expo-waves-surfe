@@ -23,6 +23,7 @@ export default function Waves() {
   const [audioMetering, setAudioMetering] = useState([]);
   const metering = useSharedValue(-100);
 
+
   async function startRecording() {
     try {
       setAudioMetering([]);
@@ -51,6 +52,7 @@ export default function Waves() {
     }
   }
 
+
   async function stopRecording() {
     if (!recording) {
       return;
@@ -72,6 +74,7 @@ export default function Waves() {
       ]);
     }
   }
+
 
   const animatedRedCircle = useAnimatedStyle(() => ({
     width: withTiming(recording ? '60%' : '100%'),
