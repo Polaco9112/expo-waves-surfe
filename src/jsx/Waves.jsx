@@ -16,7 +16,6 @@ import Animated, {
 import AudioListItem from './Audios';
 
 
-
 export default function Waves() {
   const [recording, setRecording] = useState();
   const [memos, setMemos] = useState([]);
