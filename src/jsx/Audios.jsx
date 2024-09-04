@@ -9,6 +9,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+const audioRecoder = new AudioRecorderPlayer()
+
 const AudioListItem = ({ memo }) => {
   const [sound, setSound] = useState(null);
   const [status, setStatus] = useState(null);
