@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system'
-import { FFmpegKit } from 'ffmpeg-kit-react-native';
+import { FFmpegKit, FFmpegKitConfig } from 'ffmpeg-kit-react-native';
 import { Recording } from 'expo-av/build/Audio';
 import Animated, {
   interpolate,
@@ -56,22 +56,23 @@ export default function Waves() {
 
   async function convertAudio(inputUri) {
     try {
-    const outputUri = `${FileSystem.documentDirectory}audio_${Date.now()}.mp3`
+     
+      const outputUri = `${FileSystem.documentDirectory}audio_${Date.now()}.mp3`
 
-    const command = `-i '${inputUri}' -c:a libmp3lame -b:a 128k -ar 44.1k '${outputUri}'`
+      const command = `-i '${inputUri}' -c:a libmp3lame -b:a 128k -ar 44.1k '${outputUri}'`
 
-    const session = await FFmpegKit.executeAsync(command)
+      const session = await FFmpegKit.executeAsync(command)
 
-    const returnCode = await session.getReturnCode()
+      const returnCode = await session.getReturnCode()
 
-    if(returnCode.isValueSuccess()){
-      console.log('Conversion successful', outputUri)
-      return outputUri
-    }else {
-      const failStackTrace = await session.getFailStackTrace()
-      console.error('Conversion failed', failStackTrace)
-      throw new Error(`Conversion failed with code ${returnCode}`)
-    }
+      if (returnCode.isValueSuccess()) {
+        console.log('Conversion successful', outputUri)
+        return outputUri
+      } else {
+        const failStackTrace = await session.getFailStackTrace()
+        console.error('Conversion failed', failStackTrace)
+        throw new Error(`Conversion failed with code ${returnCode}`)
+      }
     } catch (error) {
       console.error('Error during conversion', error)
       throw error
@@ -80,7 +81,7 @@ export default function Waves() {
 
 
   async function stopRecording() {
-    if(!recording){
+    if (!recording) {
       return
     }
 
@@ -97,17 +98,17 @@ export default function Waves() {
 
     metering.value = -100
 
-    if(uri){
+    if (uri) {
       try {
         const mp3Uri = await convertAudio(uri)
         setMemos((existingMemos) => [
-          {uri: mp3Uri, metering: audioMetering},
+          { uri: mp3Uri, metering: audioMetering },
           ...existingMemos
         ])
       } catch (error) {
         console.error('Error converting audio, keeping original file', error)
         setMemos((existingMemos) => [
-          {uri, metering: audioMetering},
+          { uri, metering: audioMetering },
           ...existingMemos
         ])
       }
