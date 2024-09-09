@@ -56,23 +56,33 @@ export default function Waves() {
 
   async function convertAudio(inputUri) {
     try {
-     
+
       const outputUri = `${FileSystem.documentDirectory}audio_${Date.now()}.mp3`
 
+      FFmpegKitConfig.enableLogCallback((log) => {
+        console.log('FFmpeg log:', log.getMessage());
+      });
+
+      FFmpegKitConfig.enableStatisticsCallback((statistics) => {
+        console.log('FFmpeg statistics:', statistics);
+      });
+
+      
       const command = `-i '${inputUri}' -c:a libmp3lame -b:a 128k -ar 44.1k '${outputUri}'`
 
-      const session = await FFmpegKit.executeAsync(command)
 
-      const returnCode = await session.getReturnCode()
+      FFmpegKit.executeAsync(command, async (session) => {
+        const returnCode = await session.getReturnCode()
 
-      if (returnCode.isValueSuccess()) {
-        console.log('Conversion successful', outputUri)
-        return outputUri
-      } else {
-        const failStackTrace = await session.getFailStackTrace()
-        console.error('Conversion failed', failStackTrace)
-        throw new Error(`Conversion failed with code ${returnCode}`)
-      }
+        if (returnCode.isValueSuccess()) {
+          console.log('Conversion successful', outputUri)
+          return outputUri
+        }else{
+          const failStackTrace = await session.getFailStackTrace()
+          console.error('Conversion failed', failStackTrace)
+          throw new Error(`Conversion failed with code ${returnCode}`)
+        }
+      })
     } catch (error) {
       console.error('Error during conversion', error)
       throw error
