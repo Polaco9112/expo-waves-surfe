@@ -5,8 +5,6 @@ import {
   Pressable,
 } from 'react-native';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system'
-import { FFmpegKit, FFmpegKitConfig } from 'ffmpeg-kit-react-native';
 import { Recording } from 'expo-av/build/Audio';
 import Animated, {
   interpolate,
@@ -54,74 +52,26 @@ export default function Waves() {
     }
   }
 
-  async function convertAudio(inputUri) {
-    try {
-
-      const outputUri = `${FileSystem.documentDirectory}audio_${Date.now()}.mp3`
-
-      FFmpegKitConfig.enableLogCallback((log) => {
-        console.log('FFmpeg log:', log.getMessage());
-      });
-
-      FFmpegKitConfig.enableStatisticsCallback((statistics) => {
-        console.log('FFmpeg statistics:', statistics);
-      });
-
-      
-      const command = `-i '${inputUri}' -c:a libmp3lame -b:a 128k -ar 44.1k '${outputUri}'`
-
-
-      FFmpegKit.executeAsync(command, async (session) => {
-        const returnCode = await session.getReturnCode()
-
-        if (returnCode.isValueSuccess()) {
-          console.log('Conversion successful', outputUri)
-          return outputUri
-        }else{
-          const failStackTrace = await session.getFailStackTrace()
-          console.error('Conversion failed', failStackTrace)
-          throw new Error(`Conversion failed with code ${returnCode}`)
-        }
-      })
-    } catch (error) {
-      console.error('Error during conversion', error)
-      throw error
-    }
-  }
-
 
   async function stopRecording() {
     if (!recording) {
-      return
+      return;
     }
 
-    console.log('Stopping recording...')
-    setRecording(undefined)
-    await recording.stopAndUnloadAsync()
-
+    console.log('Stopping recording..');
+    setRecording(undefined);
+    await recording.stopAndUnloadAsync();
     await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false
-    })
-
-    const uri = recording.getURI()
-    console.log('Recording stopped and stored at', uri)
-
-    metering.value = -100
-
+      allowsRecordingIOS: false,
+    });
+    const uri = recording.getURI();
+    console.log('Recording stopped and stored at', uri);
+    metering.value = -100;
     if (uri) {
-      try {
-        const mp3Uri = await convertAudio(uri)
-        setMemos((existingMemos) => [
-          { uri: mp3Uri, metering: audioMetering },
-          ...existingMemos
-        ])
-      } catch (error) {
-        console.error('Error converting audio, keeping original file', error)
-        setMemos((existingMemos) => [
-          { uri, metering: audioMetering },
-          ...existingMemos
-        ])
-      }
+      setMemos((existingMemos) => [
+        { uri, metering: audioMetering },
+        ...existingMemos,
+      ]);
     }
   }
 
