@@ -1,30 +1,21 @@
-import React, { useState } from 'react';
-import {
-  View,
-  FlatList,
-  Pressable,
-} from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, FlatList, Pressable, StyleSheet } from 'react-native';
 import { Audio } from 'expo-av';
-import { Recording } from 'expo-av/build/Audio';
 import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import AudioListItem from './Audios';
 
-
 export default function Waves() {
-  const [recording, setRecording] = useState();
+  const [recording, setRecording] = useState(null);
   const [memos, setMemos] = useState([]);
-
   const [audioMetering, setAudioMetering] = useState([]);
   const metering = useSharedValue(-100);
 
-
-  async function startRecording() {
+  const startRecording = useCallback(async () => {
     try {
       setAudioMetering([]);
 
@@ -50,16 +41,15 @@ export default function Waves() {
     } catch (err) {
       console.error('Failed to start recording', err);
     }
-  }
+  }, []);
 
-
-  async function stopRecording() {
+  const stopRecording = useCallback(async () => {
     if (!recording) {
       return;
     }
 
     console.log('Stopping recording..');
-    setRecording(undefined);
+    setRecording(null);
     await recording.stopAndUnloadAsync();
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
@@ -73,8 +63,7 @@ export default function Waves() {
         ...existingMemos,
       ]);
     }
-  }
-
+  }, [recording, audioMetering]);
 
   const animatedRedCircle = useAnimatedStyle(() => ({
     width: withTiming(recording ? '60%' : '100%'),
@@ -104,6 +93,7 @@ export default function Waves() {
       <FlatList
         data={memos}
         renderItem={({ item }) => <AudioListItem memo={item} />}
+        keyExtractor={(item, index) => index.toString()}
       />
 
       <View style={styles.footer}>
@@ -121,7 +111,7 @@ export default function Waves() {
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -137,11 +127,9 @@ const styles = {
     width: 70,
     height: 70,
     borderRadius: 35,
-
     borderWidth: 3,
     borderColor: 'gray',
     padding: 3,
-
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'white',
@@ -154,9 +142,8 @@ const styles = {
     right: -20,
     borderRadius: 1000,
   },
-
   redCircle: {
     backgroundColor: 'orangered',
     aspectRatio: 1,
   },
-};
+});

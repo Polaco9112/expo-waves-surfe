@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { AVPlaybackStatus, Audio } from 'expo-av';
+import { Audio } from 'expo-av';
 import Animated, {
-  Extrapolate,
-  interpolate,
   useAnimatedStyle,
+  interpolateColor,
+  useDerivedValue,
   withTiming,
+  interpolate,
+  Extrapolate,
 } from 'react-native-reanimated';
-
 
 const AudioListItem = ({ memo }) => {
   const [sound, setSound] = useState(null);
   const [status, setStatus] = useState(null);
+  const progress = useDerivedValue(() => {
+    return status?.positionMillis ? status.positionMillis / (status.durationMillis || 1) : 0;
+  }, [status]);
 
   async function loadSound() {
     const { sound } = await Audio.Sound.createAsync(
@@ -23,24 +27,28 @@ const AudioListItem = ({ memo }) => {
     setSound(sound);
   }
 
-
-
   useEffect(() => {
     loadSound();
+    return () => {
+      if (sound) {
+        console.log('Unloading Sound');
+        sound.unloadAsync();
+      }
+    };
   }, [memo]);
 
   async function playSound() {
-    if (!sound) {
-      return
-    }
+    if (!sound) return;
 
-    if (status?.isLoaded && status?.isPlaying) {
-      await sound.pauseAsync()
-    } else if (status?.isLoaded && status.didJustFinish) {
-      await sound.setPositionAsync(0)
-      await sound.playAsync()
-    } else if (status?.isLoaded) {
-      await sound.playFromPositionAsync(status.positionMillis)
+    if (status?.isLoaded) {
+      if (status.isPlaying) {
+        await sound.pauseAsync();
+      } else if (status.didJustFinish) {
+        await sound.setPositionAsync(0);
+        await sound.playAsync();
+      } else {
+        await sound.playFromPositionAsync(status.positionMillis);
+      }
     }
   }
 
@@ -48,99 +56,58 @@ const AudioListItem = ({ memo }) => {
     async (newStatus) => {
       setStatus(newStatus);
 
-      if (!newStatus.isLoaded || !sound) {
-        return;
-      }
-
-      if (newStatus.didJustFinish) {
+      if (newStatus.isLoaded && newStatus.didJustFinish) {
         await sound.setPositionAsync(0);
       }
     },
     [sound]
   );
 
-  useEffect(() => {
-    return sound
-      ? () => {
-        console.log('Unloading Sound');
-        sound.unloadAsync();
-      }
-      : undefined;
-  }, [sound]);
-
   const formatMillis = (millis) => {
     const minutes = Math.floor(millis / (1000 * 60));
     const seconds = Math.floor((millis % (1000 * 60)) / 1000);
-
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  const isPlaying = status ? status.isPlaying : false;
-  const position = status ? status.positionMillis : 0;
-  const duration = status ? status.durationMillis : 1;
+  const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-  const progress = position / duration;
-
-  let numLines = 50;
-  let lines = [];
-
-  if (numLines > 0 && memo.metering.length > 0) {
-    for (let i = 0; i < numLines; i++) {
-      const meteringIndex = Math.floor((i * memo.metering.length) / numLines);
-      const nextMeteringIndex = Math.ceil(
-        ((i + 1) * memo.metering.length) / numLines
+  const waveLines = memo.metering.map((db, index) => {
+    const lineStyle = useAnimatedStyle(() => {
+      const height = interpolate(
+        db,
+        [-60, 0],
+        [5, 50],
+        Extrapolate.CLAMP
       );
-      const values = memo.metering.slice(meteringIndex, nextMeteringIndex);
-      if (values.length > 0) {
-        const average = values.reduce((sum, a) => sum + a, 0) / values.length;
-        lines.push(average);
-      }
-    }
-  }
+      const backgroundColor = interpolateColor(
+        progress.value,
+        [index / memo.metering.length - 0.1, index / memo.metering.length],
+        ['#707676', '#ad1b07']
+      );
+      return {
+        height: withTiming(height, { duration: 300 }),
+        backgroundColor: withTiming(backgroundColor, { duration: 300 }),
+      };
+    });
+
+    return (
+      <AnimatedPressable key={index} style={[styles.waveLine, lineStyle]} />
+    );
+  });
 
   return (
     <View style={styles.container}>
       <FontAwesome5
         onPress={playSound}
-        name={isPlaying ? 'pause' : 'play'}
+        name={status?.isPlaying ? 'pause' : 'play'}
         size={20}
         color={'gray'}
       />
 
       <View style={styles.playbackContainer}>
-        {/* <View style={styles.playbackBackground} /> */}
-
-        <View style={styles.wave}>
-          {lines.map((db, index) => (
-            <View
-              key={index}
-              style={[
-                styles.waveLine,
-                {
-                  height: interpolate(db, [-60, 0], [5, 50], Extrapolate.CLAMP),
-                  backgroundColor:
-                    progress > index / lines.length ? '#ad1b07' : '#707676',
-                },
-              ]}
-            />
-          ))}
-        </View>
-
-        {/* <Animated.View
-          style={[styles.playbackIndicator, animatedIndicatorStyle]}
-        /> */}
-
-        <Text
-          style={{
-            position: 'absolute',
-            right: 0,
-            bottom: 0,
-            color: 'gray',
-            fontFamily: 'Inter',
-            fontSize: 12,
-          }}
-        >
-          {formatMillis(position || 0)} / {formatMillis(duration || 0)}
+        <View style={styles.wave}>{waveLines}</View>
+        <Text style={styles.timeText}>
+          {formatMillis(status?.positionMillis || 0)} / {formatMillis(status?.durationMillis || 0)}
         </Text>
       </View>
     </View>
@@ -157,8 +124,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 10,
     gap: 15,
-
-    // shadow
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -166,28 +131,13 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
-
     elevation: 3,
   },
-
   playbackContainer: {
     flex: 1,
     height: 80,
     justifyContent: 'center',
   },
-  playbackBackground: {
-    height: 3,
-    backgroundColor: 'gainsboro',
-    borderRadius: 5,
-  },
-  playbackIndicator: {
-    width: 10,
-    aspectRatio: 1,
-    borderRadius: 10,
-    backgroundColor: 'red',
-    position: 'absolute',
-  },
-
   wave: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -195,9 +145,16 @@ const styles = StyleSheet.create({
   },
   waveLine: {
     flex: 1,
-    height: 30,
-    backgroundColor: 'gainsboro',
+    width: 3,
     borderRadius: 20,
+  },
+  timeText: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    color: 'gray',
+    fontFamily: 'Inter',
+    fontSize: 12,
   },
 });
 
