@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { View, FlatList, Pressable, StyleSheet } from 'react-native';
 import { Audio } from 'expo-av';
 import Animated, {
@@ -15,7 +15,7 @@ export default function Waves() {
   const [audioMetering, setAudioMetering] = useState([]);
   const metering = useSharedValue(-100);
 
-  const startRecording = useCallback(async () => {
+  const startRecording = async () => {
     try {
       setAudioMetering([]);
 
@@ -41,9 +41,9 @@ export default function Waves() {
     } catch (err) {
       console.error('Failed to start recording', err);
     }
-  }, []);
+  };
 
-  const stopRecording = useCallback(async () => {
+  const stopRecording = async () => {
     if (!recording) {
       return;
     }
@@ -63,7 +63,7 @@ export default function Waves() {
         ...existingMemos,
       ]);
     }
-  }, [recording, audioMetering]);
+  };
 
   const animatedRedCircle = useAnimatedStyle(() => ({
     width: withTiming(recording ? '60%' : '100%'),
