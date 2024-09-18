@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, FlatList, Pressable, StyleSheet } from 'react-native';
 import { Audio } from 'expo-av';
 import Animated, {
@@ -14,6 +14,14 @@ export default function Waves() {
   const [memos, setMemos] = useState([]);
   const [audioMetering, setAudioMetering] = useState([]);
   const metering = useSharedValue(-100);
+
+  useEffect(() => {
+    return () => {
+      if (recording) {
+        recording.stopAndUnloadAsync();
+      }
+    };
+  }, [recording]);
 
   const startRecording = async () => {
     try {
@@ -49,12 +57,13 @@ export default function Waves() {
     }
 
     console.log('Stopping recording..');
+    const currentRecording = recording;
     setRecording(null);
-    await recording.stopAndUnloadAsync();
+    await currentRecording.stopAndUnloadAsync();
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
     });
-    const uri = recording.getURI();
+    const uri = currentRecording.getURI();
     console.log('Recording stopped and stored at', uri);
     metering.value = -100;
     if (uri) {

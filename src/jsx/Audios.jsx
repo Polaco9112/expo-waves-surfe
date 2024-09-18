@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -14,22 +14,30 @@ import Animated, {
 const AudioListItem = ({ memo }) => {
   const [sound, setSound] = useState(null);
   const [status, setStatus] = useState(null);
-  const progress = useDerivedValue(() => {
-    return status?.positionMillis ? status.positionMillis / (status.durationMillis || 1) : 0;
-  }, [status]);
+  const statusRef = useRef(null);
 
-  async function loadSound() {
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: memo.uri },
-      { progressUpdateIntervalMillis: 1000 / 60 },
-      onPlaybackStatusUpdate
-    );
-    setSound(sound);
-  }
+  const progress = useDerivedValue(() => {
+    return statusRef.current?.positionMillis ? statusRef.current.positionMillis / (statusRef.current.durationMillis || 1) : 0;
+  }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadSound() {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: memo.uri },
+        { progressUpdateIntervalMillis: 1000 / 60 },
+        onPlaybackStatusUpdate
+      );
+      if (isMounted) {
+        setSound(sound);
+      }
+    }
+
     loadSound();
+
     return () => {
+      isMounted = false;
       if (sound) {
         console.log('Unloading Sound');
         sound.unloadAsync();
@@ -37,7 +45,16 @@ const AudioListItem = ({ memo }) => {
     };
   }, [memo]);
 
-  async function playSound() {
+  const onPlaybackStatusUpdate = (newStatus) => {
+    statusRef.current = newStatus;
+    setStatus(newStatus);
+
+    if (newStatus.isLoaded && newStatus.didJustFinish) {
+      sound?.setPositionAsync(0);
+    }
+  };
+
+  const playSound = async () => {
     if (!sound) return;
 
     if (status?.isLoaded) {
@@ -50,18 +67,7 @@ const AudioListItem = ({ memo }) => {
         await sound.playFromPositionAsync(status.positionMillis);
       }
     }
-  }
-
-  const onPlaybackStatusUpdate = useCallback(
-    async (newStatus) => {
-      setStatus(newStatus);
-
-      if (newStatus.isLoaded && newStatus.didJustFinish) {
-        await sound.setPositionAsync(0);
-      }
-    },
-    [sound]
-  );
+  };
 
   const formatMillis = (millis) => {
     const minutes = Math.floor(millis / (1000 * 60));
